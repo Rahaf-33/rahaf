@@ -6,7 +6,7 @@ import { classStats, totals } from '@/store/selectors';
 import { Badge, Button, Card, cx, DemoBadge, PageHeader, StatCard, Empty } from '@/components/ui';
 import { ProgressChart, C } from '@/components/charts';
 import { TYPE_LABEL, SEVERITY_LABEL, formatDateTime, formatDuration, formatTime, pct } from '@/lib/labels';
-import { downloadFile, toCSV } from '@/lib/export';
+import { downloadFile, toCSV, HOSTED } from '@/lib/export';
 import type { EmergencyRecord } from '@/types';
 import { Logo } from '@/components/Logo';
 
@@ -67,9 +67,9 @@ export default function Reports() {
     <div>
       <PageHeader title="التقارير" icon={<FileBarChart2 className="h-6 w-6" />} subtitle="تقرير زمني لكل حالة طوارئ أو تمرين مع مؤشرات الاستجابة" actions={
         <div className="no-print flex flex-wrap gap-2">
-          <Button variant="outline" icon={<Download className="h-4 w-4" />} onClick={exportCSV}>CSV / Excel</Button>
-          <Button variant="outline" icon={<FileJson className="h-4 w-4" />} onClick={exportJSON}>JSON</Button>
-          <Button icon={<Printer className="h-4 w-4" />} onClick={() => window.print()}>طباعة / PDF</Button>
+          <Button variant="outline" icon={<Download className="h-4 w-4" />} onClick={exportCSV}>{HOSTED ? 'نسخ CSV' : 'CSV / Excel'}</Button>
+          <Button variant="outline" icon={<FileJson className="h-4 w-4" />} onClick={exportJSON}>{HOSTED ? 'نسخ JSON' : 'JSON'}</Button>
+          {!HOSTED && <Button icon={<Printer className="h-4 w-4" />} onClick={() => window.print()}>طباعة / PDF</Button>}
         </div>
       } />
 

@@ -99,7 +99,7 @@ function ClassesTab() {
             <td>{teachers.find((t) => t.id === c.teacherId)?.name}</td>
             <td>{aps.find((a) => a.id === c.assemblyPointId)?.name}</td>
             <td className="tabular-nums">{students.filter((s) => s.classId === c.id).length}</td>
-            <RowActions onEdit={() => setEdit(c)} onDelete={() => confirm(`حذف فصل ${c.name} وجميع طالباته؟`) && remove(c.id)} />
+            <RowActions onEdit={() => setEdit(c)} onDelete={() => remove(c.id)} />
           </tr>
         ))}
       </Table>
@@ -130,7 +130,7 @@ function TeachersTab() {
         {teachers.map((t) => (
           <tr key={t.id}>
             <td className="px-4 py-2.5 font-semibold">{t.name}</td><td>{t.subject}</td><td>{classes.find((c) => c.teacherId === t.id)?.name ?? '—'}</td><td dir="ltr" className="text-right">{t.phone}</td>
-            <RowActions onEdit={() => setEdit(t)} onDelete={() => confirm(`حذف ${t.name}؟`) && remove(t.id)} />
+            <RowActions onEdit={() => setEdit(t)} onDelete={() => remove(t.id)} />
           </tr>
         ))}
       </Table>
@@ -171,7 +171,7 @@ function StudentsTab() {
               <td className="px-4 py-2 text-xs text-navy-400">{s.id}</td><td className="font-semibold">{s.name}</td><td>{classes.find((c) => c.id === s.classId)?.name}</td>
               <td><Badge className={s.attendance === 'absent' ? 'bg-gray-100 text-gray-600 ring-gray-200' : s.attendance === 'late' ? 'bg-warn-soft text-warn-dark ring-warn/30' : 'bg-safe-soft text-safe-dark ring-safe/30'}>{ATTENDANCE_LABEL[s.attendance]}</Badge></td>
               <td className="text-xs text-navy-600">{s.medicalNote ?? '—'}</td>
-              <RowActions onEdit={() => setEdit(s)} onDelete={() => confirm(`حذف ${s.name}؟`) && remove(s.id)} />
+              <RowActions onEdit={() => setEdit(s)} onDelete={() => remove(s.id)} />
             </tr>
           ))}
         </Table>
@@ -207,7 +207,7 @@ function SensorsTab() {
               <td>{zones.find((z) => z.id === s.zoneId)?.name ?? aps.find((a) => a.id === s.assemblyPointId)?.name}</td>
               <td className={cx('tabular-nums', s.battery < 20 && 'font-bold text-danger')}>{s.battery}%</td>
               <td><button onClick={() => upsert({ ...s, online: !s.online })} className={cx('relative inline-flex h-6 w-11 items-center rounded-full transition', s.online ? 'bg-safe' : 'bg-gray-300')} aria-label="تبديل"><span className={cx('inline-block h-5 w-5 rounded-full bg-white shadow transition', s.online ? '-translate-x-0.5' : '-translate-x-[22px]')} /></button></td>
-              <RowActions onEdit={() => setEdit(s)} onDelete={() => confirm(`حذف ${s.name}؟`) && remove(s.id)} />
+              <RowActions onEdit={() => setEdit(s)} onDelete={() => remove(s.id)} />
             </tr>
           ))}
         </Table>
@@ -239,7 +239,7 @@ function ExitsTab() {
         {exits.map((x) => (
           <tr key={x.id}>
             <td className="px-4 py-2.5 font-semibold">{x.name}</td><td>{floors.find((f) => f.id === x.floorId)?.name}</td><td>{({ main: 'رئيسي', emergency: 'طوارئ', stairs: 'درج طوارئ' })[x.kind]}</td><td>{aps.find((a) => a.id === x.assemblyPointId)?.name}</td>
-            <RowActions onEdit={() => setEdit(x)} onDelete={() => confirm(`حذف ${x.name}؟`) && remove(x.id)} />
+            <RowActions onEdit={() => setEdit(x)} onDelete={() => remove(x.id)} />
           </tr>
         ))}
       </Table>
@@ -331,10 +331,20 @@ function Table({ head, children }: { head: string[]; children: React.ReactNode }
 }
 
 function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  const [ask, setAsk] = useState(false);
   return (
     <td className="whitespace-nowrap pl-3 text-left">
-      <button onClick={onEdit} className="rounded-lg p-1.5 text-navy-500 hover:bg-navy-50 hover:text-navy-800" aria-label="تعديل"><Pencil className="h-4 w-4" /></button>
-      <button onClick={onDelete} className="rounded-lg p-1.5 text-navy-400 hover:bg-danger-soft hover:text-danger" aria-label="حذف"><Trash2 className="h-4 w-4" /></button>
+      {ask ? (
+        <span className="inline-flex items-center gap-1">
+          <button onClick={() => { setAsk(false); onDelete(); }} className="rounded-lg bg-danger px-2 py-1 text-xs font-bold text-white">تأكيد الحذف</button>
+          <button onClick={() => setAsk(false)} className="rounded-lg px-2 py-1 text-xs text-navy-500 hover:bg-navy-50">إلغاء</button>
+        </span>
+      ) : (
+        <>
+          <button onClick={onEdit} className="rounded-lg p-1.5 text-navy-500 hover:bg-navy-50 hover:text-navy-800" aria-label="تعديل"><Pencil className="h-4 w-4" /></button>
+          <button onClick={() => setAsk(true)} className="rounded-lg p-1.5 text-navy-400 hover:bg-danger-soft hover:text-danger" aria-label="حذف"><Trash2 className="h-4 w-4" /></button>
+        </>
+      )}
     </td>
   );
 }

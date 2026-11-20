@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { HashRouter, MemoryRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useStore } from '@/store/useStore';
 import { Layout } from '@/components/Layout';
@@ -24,10 +24,12 @@ function Guard({ path, children }: { path: string; children: ReactNode }) {
   return <>{children}</>;
 }
 
+const Router = import.meta.env.VITE_HOSTED === '1' ? MemoryRouter : HashRouter;
+
 export default function App() {
   const user = useStore((s) => s.user);
   return (
-    <HashRouter>
+    <Router>
       <Routes>
         <Route path="/login" element={user ? <Navigate to={homeFor(user.role)} replace /> : <Login />} />
         <Route element={user ? <Layout /> : <Navigate to="/login" replace />}>
@@ -45,6 +47,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </HashRouter>
+    </Router>
   );
 }
