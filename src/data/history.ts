@@ -16,11 +16,11 @@ export function buildDemoHistory(): EmergencyRecord[] {
     }
     const log: LogEntry[] = [
       { id: `${id}-1`, at: startedAt, category: 'alert', level: 'warning', actor: 'منسقة التمرين', message: `بدء ${title}` },
-      { id: `${id}-2`, at: startedAt + 2000, category: 'emergency', level: 'critical', actor: 'أ. هيفاء السبيعي', message: 'تفعيل وضع الطوارئ (تمرين)' },
+      { id: `${id}-2`, at: startedAt + 2000, category: 'emergency', level: 'critical', actor: 'أ. رهف العمري', message: 'تفعيل وضع الطوارئ (تمرين)' },
       { id: `${id}-3`, at: startedAt + 4000, category: 'notification', level: 'info', actor: 'المنصة', message: 'إرسال إشعار داخل المنصة لجميع المعلمات' },
-      { id: `${id}-4`, at: startedAt + 38000, category: 'teacher', level: 'success', actor: 'أ. نوف القحطاني', message: 'أول تأكيد سلامة بالاسم – فصل 1/1' },
+      { id: `${id}-4`, at: startedAt + 38000, category: 'teacher', level: 'success', actor: 'أ. دانة فارس', message: 'أول تأكيد سلامة بالاسم – فصل 1/1' },
       { id: `${id}-5`, at: startedAt + Math.round(durationSec * 0.55) * 1000, category: 'zone', level: 'success', actor: 'وحدة الرصد', message: 'انتهت حركة الإخلاء في جميع المناطق' },
-      { id: `${id}-6`, at: startedAt + durationSec * 1000, category: 'emergency', level: 'success', actor: 'أ. هيفاء السبيعي', message: 'إنهاء التمرين وإعادة النظام للوضع الطبيعي' },
+      { id: `${id}-6`, at: startedAt + durationSec * 1000, category: 'emergency', level: 'success', actor: 'أ. رهف العمري', message: 'إنهاء التمرين وإعادة النظام للوضع الطبيعي' },
     ];
     const per = Math.floor(present / CLASSES.length);
     return {

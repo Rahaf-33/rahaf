@@ -583,7 +583,7 @@ export const useStore = create<AppState>()(
       },
     }),
     {
-      name: 'istibaq-demo-v2',
+      name: 'istibaq-demo-v3',
       version: 1,
       partialize: (s) => ({
         user: s.user, school: s.school, floors: s.floors, classes: s.classes, teachers: s.teachers,
@@ -661,6 +661,10 @@ function buildPlan(st: AppState, alert: Alert, scripted: boolean): Plan {
 
   const events: SimEvent[] = [];
   const S = () => useStore.getState();
+  const teacherNameOf = (cid: string) => {
+    const c = S().classes.find((x) => x.id === cid);
+    return S().teachers.find((x) => x.id === c?.teacherId)?.name ?? 'المعلمة';
+  };
   if (scripted) {
     events.push({
       at: 1, done: false, run: () => {
@@ -686,7 +690,7 @@ function buildPlan(st: AppState, alert: Alert, scripted: boolean): Plan {
     events.push({
       at: 18, done: false, run: () => {
         const stu = S().students.find((x) => x.classId === 'C2-2' && x.attendance !== 'absent' && x.medicalNote?.startsWith('ربو'));
-        if (stu && stu.safety === 'unverified') S().setStudentSafety(stu.id, 'needs_help', 'أ. سارة الزهراني', 'ضيق تنفس (ربو) في نقطة التجمع – تحتاج المسؤولة الصحية');
+        if (stu && stu.safety === 'unverified') S().setStudentSafety(stu.id, 'needs_help', teacherNameOf('C2-2'), 'ضيق تنفس (ربو) في نقطة التجمع – تحتاج المسؤولة الصحية');
       },
     });
     events.push({
@@ -700,7 +704,7 @@ function buildPlan(st: AppState, alert: Alert, scripted: boolean): Plan {
         const list = S().students.filter((x) => x.classId === 'C1-3' && x.attendance !== 'absent');
         const stu = list[list.length - 1];
         if (stu && stu.safety === 'unverified') {
-          S().setStudentSafety(stu.id, 'not_found', 'أ. أمل الغامدي', 'لم تُشاهد في نقطة التجمع – آخر مشاهدة حسب زميلاتها: دورات المياه بالطابق الأرضي');
+          S().setStudentSafety(stu.id, 'not_found', teacherNameOf('C1-3'), 'لم تُشاهد في نقطة التجمع – آخر مشاهدة حسب زميلاتها: دورات المياه بالطابق الأرضي');
           S().setZoneStatus('G-B2', 'needs_check', 'وحدة الرصد');
         }
       },
