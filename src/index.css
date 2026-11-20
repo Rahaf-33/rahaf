@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+html, body { background: #f4f7fc; }
+body { @apply font-sans text-navy-900 antialiased; }
+* { -webkit-tap-highlight-color: transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #c7d4ea; border-radius: 10px; border: 2px solid #f4f7fc; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
+.recharts-legend-item-text { color: #18356b !important; }
+
+@media print {
+  .no-print { display: none !important; }
+  body, html { background: #fff !important; }
+  main { padding: 0 !important; max-width: none !important; }
+  .lg\:mr-72 { margin-right: 0 !important; }
+  .print-break { break-before: page; }
+  section { box-shadow: none !important; break-inside: avoid; }
+}
