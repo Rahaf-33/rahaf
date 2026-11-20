@@ -1,4 +1,5 @@
-import type { AIAnalysis, EmergencyType, SafetyProcedure, Severity, Zone } from '@/types';
+import type { AIAnalysis, EmergencyType, SafetyProcedure, Severity, Zone, Text } from '@/types';
+import { bi } from '@/i18n/core';
 
 /**
  * محرك تحليل الإنذارات – نموذج محاكاة قائم على القواعد (Rule-based NLP).
@@ -52,6 +53,22 @@ const RAW_TERMS: Term[] = [
   { term: 'كثيف', type: 'severity', weight: 2 }, { term: 'انتشار', type: 'severity', weight: 2 }, { term: 'خطير', type: 'severity', weight: 2 },
   { term: 'محاصر', type: 'severity', weight: 3 }, { term: 'عدد كبير', type: 'severity', weight: 2 }, { term: 'اصابات', type: 'severity', weight: 3 },
   { term: 'بسيط', type: 'severity', weight: -2 }, { term: 'محدود', type: 'severity', weight: -2 }, { term: 'تمت السيطره', type: 'severity', weight: -3 },
+  // English vocabulary
+  { term: 'fire', type: 'fire', weight: 5 }, { term: 'smoke', type: 'fire', weight: 4 }, { term: 'smoke detector', type: 'fire', weight: 5 }, { term: 'flames', type: 'fire', weight: 4 },
+  { term: 'burning', type: 'fire', weight: 4 }, { term: 'burning smell', type: 'fire', weight: 5 }, { term: 'short circuit', type: 'fire', weight: 3 }, { term: 'sparks', type: 'fire', weight: 2 },
+  { term: 'threat', type: 'external_threat', weight: 5 }, { term: 'armed', type: 'external_threat', weight: 6 }, { term: 'intruder', type: 'external_threat', weight: 6 },
+  { term: 'suspicious person', type: 'external_threat', weight: 6 }, { term: 'suspicious', type: 'external_threat', weight: 4 }, { term: 'suspicious object', type: 'external_threat', weight: 6 },
+  { term: 'gunshots', type: 'external_threat', weight: 7 }, { term: 'shooting', type: 'external_threat', weight: 7 }, { term: 'lock the doors', type: 'external_threat', weight: 4 },
+  { term: 'inside classrooms', type: 'external_threat', weight: 2 }, { term: 'lockdown', type: 'external_threat', weight: 5 }, { term: 'gate', type: 'external_threat', weight: 1 },
+  { term: 'evacuate', type: 'evacuation', weight: 3 }, { term: 'evacuation', type: 'evacuation', weight: 3 }, { term: 'leave the building', type: 'evacuation', weight: 3 },
+  { term: 'gas leak', type: 'evacuation', weight: 6 }, { term: 'gas', type: 'evacuation', weight: 3 }, { term: 'earthquake', type: 'evacuation', weight: 6 }, { term: 'tremor', type: 'evacuation', weight: 5 },
+  { term: 'crack', type: 'evacuation', weight: 5 }, { term: 'collapse', type: 'evacuation', weight: 5 }, { term: 'flood', type: 'evacuation', weight: 5 }, { term: 'chemicals', type: 'evacuation', weight: 4 },
+  { term: 'fainted', type: 'medical', weight: 6 }, { term: 'fainting', type: 'medical', weight: 6 }, { term: 'injury', type: 'medical', weight: 4 }, { term: 'injured', type: 'medical', weight: 4 },
+  { term: 'bleeding', type: 'medical', weight: 6 }, { term: 'asthma', type: 'medical', weight: 5 }, { term: 'choking', type: 'medical', weight: 5 }, { term: 'seizure', type: 'medical', weight: 6 },
+  { term: 'fell', type: 'medical', weight: 3 }, { term: 'fracture', type: 'medical', weight: 4 }, { term: 'allergy', type: 'medical', weight: 4 }, { term: 'difficulty breathing', type: 'medical', weight: 6 },
+  { term: 'unconscious', type: 'medical', weight: 7 }, { term: 'health officer', type: 'medical', weight: 3 }, { term: 'first aid', type: 'medical', weight: 3 },
+  { term: 'urgent', type: 'severity', weight: 2 }, { term: 'immediate', type: 'severity', weight: 2 }, { term: 'heavy', type: 'severity', weight: 2 }, { term: 'spreading', type: 'severity', weight: 2 },
+  { term: 'dangerous', type: 'severity', weight: 2 }, { term: 'trapped', type: 'severity', weight: 3 }, { term: 'minor', type: 'severity', weight: -2 }, { term: 'under control', type: 'severity', weight: -3 },
 ];
 
 const TERMS = RAW_TERMS.map((t) => ({ ...t, norm: normalizeArabic(t.term) })).sort((a, b) => b.norm.length - a.norm.length);
@@ -94,15 +111,21 @@ export function analyzeAlert(text: string, zones: Zone[], procedures: SafetyProc
 
   // location detection
   const normText = normalizeArabic(text);
-  let location: string | undefined;
   let best = 0;
+  let locZone: Zone | undefined;
   for (const z of zones) {
-    const zn = normalizeArabic(z.name.replace('فصل ', ''));
-    if (zn.length > best && normText.includes(zn)) { location = z.name; best = zn.length; }
+    for (const cand of [z.name.replace('فصل ', ''), (z.nameEn ?? '').replace('Class ', '')]) {
+      const zn = normalizeArabic(cand);
+      if (zn.length > 2 && zn.length > best && normText.includes(zn)) { locZone = z; best = zn.length; }
+    }
   }
+  let location: Text | undefined = locZone ? bi(locZone.name, locZone.nameEn ?? locZone.name) : undefined;
   if (!location) {
     const m = text.match(/الطابق\s+(الأرضي|الأول|الثاني)/);
-    if (m) location = m[0];
+    const me = text.match(/(ground|first|second) floor/i);
+    const FL: Record<string, [string, string]> = { 'الأرضي': ['الطابق الأرضي', 'Ground Floor'], 'الأول': ['الطابق الأول', 'First Floor'], 'الثاني': ['الطابق الثاني', 'Second Floor'], ground: ['الطابق الأرضي', 'Ground Floor'], first: ['الطابق الأول', 'First Floor'], second: ['الطابق الثاني', 'Second Floor'] };
+    const k = m?.[1] ?? me?.[1]?.toLowerCase();
+    if (k && FL[k]) location = bi(FL[k][0], FL[k][1]);
   }
 
   let sevScore = BASE_SEVERITY[type] + Math.sign(sevMod) * Math.min(2, Math.ceil(Math.abs(sevMod) / 2));
@@ -112,16 +135,18 @@ export function analyzeAlert(text: string, zones: Zone[], procedures: SafetyProc
 
   const procedureId = procedures.find((p) => p.id === TYPE_TO_PROCEDURE[type])?.id ?? procedures.find((p) => p.type === type)?.id ?? procedures[0].id;
 
-  const reasoning: string[] = [];
+  const reasoning: Text[] = [];
+  const proc = procedures.find((p) => p.id === procedureId);
   if (total === 0) {
-    reasoning.push('لم يتم العثور على مصطلحات معروفة في النص؛ تم اقتراح "إخلاء" كخيار احترازي ويلزم تصنيف يدوي.');
+    reasoning.push(bi('لم يتم العثور على مصطلحات معروفة في النص؛ تم اقتراح "إخلاء" كخيار احترازي ويلزم تصنيف يدوي.', 'No known terms were found in the text; "Evacuation" is suggested as a precaution and manual classification is required.'));
   } else {
-    reasoning.push(`أعلى درجة لنوع "${TYPE_LABEL[type]}" (${topScore} نقطة من أصل ${total}).`);
+    reasoning.push(bi(`أعلى درجة لنوع "${TYPE_LABEL[type]}" (${topScore} نقطة من أصل ${total}).`, `Highest score for "${TYPE_LABEL_EN[type]}" (${topScore} of ${total} points).`));
     const kw = matched.filter((m) => m.type === type).map((m) => m.term);
-    if (kw.length) reasoning.push(`مصطلحات دالة: ${kw.join('، ')}.`);
-    if (sevMod !== 0) reasoning.push(`معدّلات الخطورة ${sevMod > 0 ? 'رفعت' : 'خفّضت'} المستوى (${matched.filter((m) => m.type === 'severity').map((m) => m.term).join('، ')}).`);
-    if (location) reasoning.push(`تم تحديد الموقع المحتمل: ${location}.`);
-    reasoning.push(`تم اختيار الإجراء من المكتبة المعتمدة: ${procedures.find((p) => p.id === procedureId)?.title ?? procedureId}.`);
+    if (kw.length) reasoning.push(bi(`مصطلحات دالة: ${kw.join('، ')}.`, `Indicative terms: ${kw.join(', ')}.`));
+    const sevTerms = matched.filter((m) => m.type === 'severity').map((m) => m.term);
+    if (sevMod !== 0) reasoning.push(bi(`معدّلات الخطورة ${sevMod > 0 ? 'رفعت' : 'خفّضت'} المستوى (${sevTerms.join('، ')}).`, `Severity modifiers ${sevMod > 0 ? 'raised' : 'lowered'} the level (${sevTerms.join(', ')}).`));
+    if (location) reasoning.push(bi(`تم تحديد الموقع المحتمل: ${typeof location === 'string' ? location : location.ar}.`, `Probable location: ${typeof location === 'string' ? location : location.en}.`));
+    reasoning.push(bi(`تم اختيار الإجراء من المكتبة المعتمدة: ${proc?.title ?? procedureId}.`, `Procedure retrieved from the approved library: ${proc?.titleEn ?? proc?.title ?? procedureId}.`));
   }
 
   return {
@@ -136,4 +161,7 @@ function escapeRe(s: string) {
 
 export const TYPE_LABEL: Record<EmergencyType, string> = {
   fire: 'حريق', external_threat: 'تهديد خارجي', evacuation: 'إخلاء', medical: 'حالة طارئة صحية',
+};
+export const TYPE_LABEL_EN: Record<EmergencyType, string> = {
+  fire: 'Fire', external_threat: 'External threat', evacuation: 'Evacuation', medical: 'Medical emergency',
 };

@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { useEffect, type ReactNode, type ButtonHTMLAttributes } from 'react';
+import { useI18n } from '@/i18n';
 
 export const cx = (...a: (string | number | false | null | undefined)[]) => a.filter(Boolean).join(' ');
 
@@ -94,6 +95,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: {
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [open, onClose]);
+  const { tr } = useI18n();
   if (!open) return null;
   const w = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' }[size];
   return (
@@ -101,7 +103,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: {
       <div className={cx('max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl animate-slideIn', w)} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-navy-50 bg-white px-5 py-4">
           <h2 className="font-display text-lg font-bold text-navy-900">{title}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-navy-500 hover:bg-navy-50" aria-label="إغلاق"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-navy-500 hover:bg-navy-50" aria-label={tr('إغلاق')}><X className="h-5 w-5" /></button>
         </div>
         <div className="p-5">{children}</div>
         {footer && <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 border-t border-navy-50 bg-white px-5 py-3">{footer}</div>}
@@ -154,9 +156,10 @@ export function Tabs<T extends string>({ value, onChange, items, className }: { 
 }
 
 export function DemoBadge({ className, children }: { className?: string; children?: ReactNode }) {
+  const { tr } = useI18n();
   return (
     <span className={cx('inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 ring-1 ring-inset ring-amber-300', className)}>
-      ● {children ?? 'بيانات تجريبية'}
+      ● {children ?? tr('بيانات تجريبية')}
     </span>
   );
 }

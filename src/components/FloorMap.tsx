@@ -3,12 +3,14 @@ import { useStore } from '@/store/useStore';
 import { classStats } from '@/store/selectors';
 import { ZONE_FILL } from '@/lib/labels';
 import type { ZoneStatus } from '@/types';
+import { useI18n, trNow } from '@/i18n';
 
 const SENSOR_COLOR: Record<string, string> = { camera: '#2a78d6', smoke: '#6b7280', heat: '#eb6834', occupancy: '#6250d6', door: '#1baf7a' };
 
 export function FloorMap({ floorId, selected, onSelect, showSensors = false, compact = false }: {
   floorId: string; selected?: string | null; onSelect?: (zoneId: string) => void; showSensors?: boolean; compact?: boolean;
 }) {
+  const { tr, n, dir } = useI18n();
   const zones = useStore((s) => s.zones);
   const exits = useStore((s) => s.exits);
   const zoneStatus = useStore((s) => s.zoneStatus);
@@ -24,7 +26,7 @@ export function FloorMap({ floorId, selected, onSelect, showSensors = false, com
   const shelter = type === 'external_threat';
 
   return (
-    <svg viewBox="0 0 1000 520" className="h-auto w-full select-none" role="img" aria-label="مخطط الطابق">
+    <svg viewBox="0 0 1000 520" className="h-auto w-full select-none" role="img" aria-label={tr('مخطط الطابق')}>
       <defs>
         <pattern id="hatch" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
           <line x1="0" y1="0" x2="0" y2="10" stroke="#dc2f2f" strokeWidth="3" opacity=".25" />
@@ -45,48 +47,48 @@ export function FloorMap({ floorId, selected, onSelect, showSensors = false, com
         const big = z.w >= 200;
         const isCorr = z.kind === 'corridor';
         return (
-          <g key={z.id} onClick={() => onSelect?.(z.id)} className={onSelect ? 'cursor-pointer' : ''} role={onSelect ? 'button' : undefined} aria-label={z.name}>
+          <g key={z.id} onClick={() => onSelect?.(z.id)} className={onSelect ? 'cursor-pointer' : ''} role={onSelect ? 'button' : undefined} aria-label={n(z)}>
             <rect x={z.x} y={z.y} width={z.w} height={z.h} rx="10" fill={isCorr && st === 'normal' ? '#f7f9fd' : c.fill} stroke={isSel ? '#0b1a38' : c.stroke} strokeWidth={isSel ? 4 : 2} className="transition-colors duration-500" />
             {st === 'danger' && <rect x={z.x} y={z.y} width={z.w} height={z.h} rx="10" fill="url(#hatch)" className="animate-pulse" />}
             {st === 'needs_check' && <rect x={z.x} y={z.y} width={z.w} height={z.h} rx="10" fill="url(#hatch-check)" />}
             {!isCorr && (
               <>
-                <text x={z.x + z.w / 2} y={z.y + (compact ? z.h / 2 : 34)} textAnchor="middle" fontSize={big ? 19 : 14} fontWeight={700} fill={c.text} style={{ direction: 'rtl' }}>
-                  {z.kind === 'stairs' ? (z.name.includes('الرئيسي') ? 'الدرج' : 'الدرج') : z.name}
+                <text x={z.x + z.w / 2} y={z.y + (compact ? z.h / 2 : 34)} textAnchor="middle" fontSize={fitFont(z.kind === 'stairs' ? tr('الدرج') : n(z), z.w, big ? 19 : 14)} fontWeight={700} fill={c.text} style={{ direction: dir }}>
+                  {z.kind === 'stairs' ? tr('الدرج') : n(z)}
                 </text>
                 {!compact && cs && (
                   <>
-                    <text x={z.x + z.w / 2} y={z.y + 64} textAnchor="middle" fontSize="13" fill="#52607a" style={{ direction: 'rtl' }}>
+                    <text x={z.x + z.w / 2} y={z.y + 64} textAnchor="middle" fontSize="13" fill="#52607a" style={{ direction: dir }}>
                       {teacherShort(cs.cls.teacherId)}
                     </text>
                     {active ? (
                       <g>
                         <rect x={z.x + 18} y={z.y + 86} width={z.w - 36} height={10} rx="5" fill="#ffffff" stroke="#d9e3f4" />
                         <rect x={z.x + 18 + (z.w - 36) * (1 - cs.confirmed / Math.max(1, cs.expected))} y={z.y + 86} width={(z.w - 36) * (cs.confirmed / Math.max(1, cs.expected))} height={10} rx="5" fill="#12a150" className="transition-all duration-500" />
-                        <text x={z.x + z.w / 2} y={z.y + 124} textAnchor="middle" fontSize="15" fontWeight={700} fill="#0b1a38" style={{ direction: 'rtl' }}>
-                          {cs.confirmed}/{cs.expected} مؤكدة
+                        <text x={z.x + z.w / 2} y={z.y + 124} textAnchor="middle" fontSize="15" fontWeight={700} fill="#0b1a38" style={{ direction: dir }}>
+                          {cs.confirmed}/{cs.expected} {tr('مؤكدة')}
                         </text>
-                        <text x={z.x + z.w / 2} y={z.y + 148} textAnchor="middle" fontSize="12" fill="#52607a" style={{ direction: 'rtl' }}>
-                          مرصود: {cs.observed}{cs.help + cs.notFound > 0 ? ` · ⚠ ${cs.help + cs.notFound}` : ''}
+                        <text x={z.x + z.w / 2} y={z.y + 148} textAnchor="middle" fontSize="12" fill="#52607a" style={{ direction: dir }}>
+                          {tr('مرصود:')} {cs.observed}{cs.help + cs.notFound > 0 ? ` · ⚠ ${cs.help + cs.notFound}` : ''}
                         </text>
                       </g>
                     ) : (
-                      <text x={z.x + z.w / 2} y={z.y + 110} textAnchor="middle" fontSize="13" fill="#52607a" style={{ direction: 'rtl' }}>
-                        {cs.expected} حاضرة من {cs.registered}
+                      <text x={z.x + z.w / 2} y={z.y + 110} textAnchor="middle" fontSize="13" fill="#52607a" style={{ direction: dir }}>
+                        {cs.expected} {tr('حاضرة من')} {cs.registered}
                       </text>
                     )}
                   </>
                 )}
                 {!compact && !cs && z.kind !== 'stairs' && (
-                  <text x={z.x + z.w / 2} y={z.y + 64} textAnchor="middle" fontSize="12" fill="#52607a" style={{ direction: 'rtl' }}>
+                  <text x={z.x + z.w / 2} y={z.y + 64} textAnchor="middle" fontSize="12" fill="#52607a" style={{ direction: dir }}>
                     {statusText(st, shelter)}
                   </text>
                 )}
               </>
             )}
             {isCorr && (
-              <text x={500} y={z.y + 20} textAnchor="middle" fontSize="13" fontWeight={600} fill="#7f9fd4" style={{ direction: 'rtl' }}>
-                {z.name}{st !== 'normal' ? ` – ${statusText(st, shelter)}` : ''}
+              <text x={500} y={z.y + 20} textAnchor="middle" fontSize="13" fontWeight={600} fill="#7f9fd4" style={{ direction: dir }}>
+                {n(z)}{st !== 'normal' ? ` – ${statusText(st, shelter)}` : ''}
               </text>
             )}
           </g>
@@ -111,8 +113,8 @@ export function FloorMap({ floorId, selected, onSelect, showSensors = false, com
         <g key={e.id}>
           <rect x={e.x - 12} y={e.y - 30} width={24} height={60} rx="6" fill="#12a150" />
           <text x={e.x} y={e.y + 5} textAnchor="middle" fontSize="16" fontWeight={900} fill="#fff">⇆</text>
-          <text x={e.x < 500 ? 130 : 870} y={292} textAnchor="middle" fontSize="12" fontWeight={700} fill="#0b7a3b" style={{ direction: 'rtl' }}>
-            {e.x < 500 ? '◀ ' : ''}{e.name}{e.x < 500 ? '' : ' ▶'}
+          <text x={e.x < 500 ? 130 : 870} y={292} textAnchor="middle" fontSize="12" fontWeight={700} fill="#0b7a3b" style={{ direction: dir }}>
+            {e.x < 500 ? '◀ ' : ''}{n(e)}{e.x < 500 ? '' : ' ▶'}
           </text>
         </g>
       ))}
@@ -127,7 +129,7 @@ export function FloorMap({ floorId, selected, onSelect, showSensors = false, com
         return (
           <g key={s.id + i}>
             <circle cx={x} cy={y} r="7" fill={s.online ? SENSOR_COLOR[s.kind] : '#9ca3af'} stroke="#fff" strokeWidth="2">
-              <title>{s.name}{s.online ? '' : ' (غير متصل)'}</title>
+              <title>{n(s)}{s.online ? '' : ` (${tr('غير متصل')})`}</title>
             </circle>
             {active && s.online && (s.kind === 'camera' || s.kind === 'occupancy') && <circle cx={x} cy={y} r="11" fill="none" stroke={SENSOR_COLOR[s.kind]} strokeWidth="2" opacity=".5" className="animate-ping" style={{ transformOrigin: `${x}px ${y}px` }} />}
             {s.triggered && s.kind !== 'door' && <circle cx={x} cy={y} r="12" fill="none" stroke="#dc2f2f" strokeWidth="3" />}
@@ -139,17 +141,18 @@ export function FloorMap({ floorId, selected, onSelect, showSensors = false, com
 
   function teacherShort(tid: string) {
     const t = useStore.getState().teachers.find((x) => x.id === tid);
-    return t ? t.name : '';
+    return t ? n(t) : '';
   }
 }
 
 function statusText(s: ZoneStatus, shelter: boolean) {
-  return { normal: 'طبيعي', evacuating: shelter ? 'إيواء' : 'جارٍ الإخلاء', cleared: shelter ? 'مؤمّن' : 'تم الإخلاء', needs_check: 'يحتاج تحقق', danger: 'منطقة خطر' }[s];
+  return { normal: trNow('طبيعي'), evacuating: shelter ? trNow('إيواء') : trNow('جارٍ الإخلاء'), cleared: shelter ? trNow('مؤمّن') : trNow('تم الإخلاء'), needs_check: trNow('يحتاج تحقق'), danger: trNow('منطقة خطر') }[s];
 }
 
 export function MapLegend() {
+  const { tr } = useI18n();
   const items: { s: ZoneStatus; l: string }[] = [
-    { s: 'normal', l: 'طبيعي' }, { s: 'evacuating', l: 'جارٍ الإخلاء / إيواء' }, { s: 'cleared', l: 'تم الإخلاء / مؤمّن' }, { s: 'needs_check', l: 'يحتاج تحقق' }, { s: 'danger', l: 'منطقة خطر' },
+    { s: 'normal', l: tr('طبيعي') }, { s: 'evacuating', l: tr('جارٍ الإخلاء / إيواء') }, { s: 'cleared', l: tr('تم الإخلاء / مؤمّن') }, { s: 'needs_check', l: tr('يحتاج تحقق') }, { s: 'danger', l: tr('منطقة خطر') },
   ];
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-navy-700">
@@ -159,9 +162,15 @@ export function MapLegend() {
           {i.l}
         </span>
       ))}
-      <span className="inline-flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded bg-safe" /> مخرج طوارئ</span>
+      <span className="inline-flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded bg-safe" /> {tr('مخرج طوارئ')}</span>
     </div>
   );
 }
 
 export const SENSOR_COLORS = SENSOR_COLOR;
+
+/** Shrinks a label so it fits inside a room of the given width (English names are longer). */
+function fitFont(label: string, width: number, base: number) {
+  const est = label.length * 0.56;
+  return Math.max(9, Math.min(base, (width - 14) / Math.max(1, est)));
+}

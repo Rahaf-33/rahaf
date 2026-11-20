@@ -1,11 +1,20 @@
 import type { EmergencyType, HelpType, Role, SafetyStatus, SensorKind, Severity, ZoneStatus, Case, Attendance } from '@/types';
-export { TYPE_LABEL } from './ai';
+import { TYPE_LABEL as TYPE_LABEL_AR } from './ai';
+import { translate } from '@/i18n/core';
+import { useStore } from '@/store/useStore';
+const getLang = () => useStore.getState().lang;
 
-export const ROLE_LABEL: Record<Role, string> = {
+/** Wraps an Arabic label map so every read returns the label in the current UI language. */
+export function localized<K extends string>(map: Record<K, string>): Record<K, string> {
+  return new Proxy(map, { get: (o, k) => (typeof k === 'string' && k in o ? translate(getLang(), (o as Record<string, string>)[k]) : undefined) });
+}
+export const TYPE_LABEL = localized(TYPE_LABEL_AR);
+
+export const ROLE_LABEL: Record<Role, string> = localized({
   principal: 'قائدة المدرسة', teacher: 'معلمة', safety: 'مسؤولة السلامة', admin: 'مديرة النظام',
-};
+});
 
-export const SEVERITY_LABEL: Record<Severity, string> = { low: 'منخفضة', medium: 'متوسطة', high: 'عالية', critical: 'حرجة' };
+export const SEVERITY_LABEL: Record<Severity, string> = localized({ low: 'منخفضة', medium: 'متوسطة', high: 'عالية', critical: 'حرجة' });
 export const SEVERITY_STYLE: Record<Severity, string> = {
   low: 'bg-navy-50 text-navy-700 ring-navy-200',
   medium: 'bg-warn-soft text-warn-dark ring-warn/30',
@@ -17,9 +26,9 @@ export const TYPE_ICON_COLOR: Record<EmergencyType, string> = {
   fire: 'text-danger bg-danger-soft', external_threat: 'text-violet-700 bg-violet-100', evacuation: 'text-warn-dark bg-warn-soft', medical: 'text-brand-dark bg-navy-50',
 };
 
-export const SAFETY_LABEL: Record<SafetyStatus, string> = {
+export const SAFETY_LABEL: Record<SafetyStatus, string> = localized({
   unverified: 'لم يتم التحقق', safe: 'مؤكدة السلامة', needs_help: 'تحتاج مساعدة', not_found: 'غير موجودة',
-};
+});
 export const SAFETY_STYLE: Record<SafetyStatus, string> = {
   unverified: 'bg-warn-soft text-warn-dark ring-warn/30',
   safe: 'bg-safe-soft text-safe-dark ring-safe/30',
@@ -27,17 +36,17 @@ export const SAFETY_STYLE: Record<SafetyStatus, string> = {
   not_found: 'bg-danger text-white ring-danger',
 };
 
-export const ATTENDANCE_LABEL: Record<Attendance, string> = { present: 'حاضرة', absent: 'غائبة', late: 'متأخرة (حاضرة)' };
+export const ATTENDANCE_LABEL: Record<Attendance, string> = localized({ present: 'حاضرة', absent: 'غائبة', late: 'متأخرة (حاضرة)' });
 
 export function zoneStatusLabel(s: ZoneStatus, type?: EmergencyType): string {
   const shelter = type === 'external_threat';
-  return {
+  return translate(getLang(), {
     normal: 'طبيعي',
     evacuating: shelter ? 'إيواء – جارٍ التحقق' : 'جارٍ الإخلاء',
     cleared: shelter ? 'مؤمّن' : 'تم الإخلاء',
     needs_check: 'يحتاج تحقق',
     danger: 'منطقة خطر',
-  }[s];
+  }[s]);
 }
 
 export const ZONE_FILL: Record<ZoneStatus, { fill: string; stroke: string; text: string }> = {
@@ -48,27 +57,36 @@ export const ZONE_FILL: Record<ZoneStatus, { fill: string; stroke: string; text:
   danger: { fill: '#fde8e8', stroke: '#dc2f2f', text: '#8f1717' },
 };
 
-export const SENSOR_LABEL: Record<SensorKind, string> = {
+export const SENSOR_LABEL: Record<SensorKind, string> = localized({
   camera: 'كاميرا عدّ (مجهول الهوية)', smoke: 'كاشف دخان', heat: 'حساس حرارة', occupancy: 'عدّاد إشغال', door: 'حساس باب',
-};
+});
 
-export const HELP_LABEL: Record<HelpType, string> = {
+export const HELP_LABEL: Record<HelpType, string> = localized({
   first_aid: 'إسعافات أولية', evacuation_assist: 'مساعدة في الإخلاء', missing_student: 'طالبة غير مؤكدة الموقع', zone_check: 'تحقق من منطقة', other: 'أخرى',
-};
+});
 
-export const PRIORITY_LABEL: Record<Case['priority'], string> = { p1: 'عاجلة جدًا', p2: 'عاجلة', p3: 'متابعة' };
+export const PRIORITY_LABEL: Record<Case['priority'], string> = localized({ p1: 'عاجلة جدًا', p2: 'عاجلة', p3: 'متابعة' });
 export const PRIORITY_STYLE: Record<Case['priority'], string> = {
   p1: 'bg-danger text-white', p2: 'bg-warn text-white', p3: 'bg-navy-100 text-navy-700',
 };
-export const CASE_STATUS_LABEL: Record<Case['status'], string> = { open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تم الحل' };
+export const CASE_STATUS_LABEL: Record<Case['status'], string> = localized({ open: 'مفتوحة', in_progress: 'قيد المعالجة', resolved: 'تم الحل' });
 
-const fmtTime = new Intl.DateTimeFormat('ar-SA-u-nu-latn', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-const fmtDate = new Intl.DateTimeFormat('ar-SA-u-nu-latn-ca-gregory', { year: 'numeric', month: 'long', day: 'numeric' });
-const fmtDateTime = new Intl.DateTimeFormat('ar-SA-u-nu-latn-ca-gregory', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+const fmts = {
+  ar: {
+    time: new Intl.DateTimeFormat('ar-SA-u-nu-latn', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
+    date: new Intl.DateTimeFormat('ar-SA-u-nu-latn-ca-gregory', { year: 'numeric', month: 'long', day: 'numeric' }),
+    dt: new Intl.DateTimeFormat('ar-SA-u-nu-latn-ca-gregory', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }),
+  },
+  en: {
+    time: new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
+    date: new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+    dt: new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }),
+  },
+};
 
-export const formatTime = (t: number) => fmtTime.format(t);
-export const formatDate = (t: number) => fmtDate.format(t);
-export const formatDateTime = (t: number) => fmtDateTime.format(t);
+export const formatTime = (t: number) => fmts[getLang()].time.format(t);
+export const formatDate = (t: number) => fmts[getLang()].date.format(t);
+export const formatDateTime = (t: number) => fmts[getLang()].dt.format(t);
 export function formatDuration(sec: number): string {
   const s = Math.max(0, Math.round(sec));
   const m = Math.floor(s / 60);
@@ -77,10 +95,16 @@ export function formatDuration(sec: number): string {
 }
 export function timeAgo(t: number, now = Date.now()): string {
   const d = Math.round((now - t) / 1000);
-  if (d < 10) return 'الآن';
-  if (d < 60) return `قبل ${d} ث`;
-  if (d < 3600) return `قبل ${Math.floor(d / 60)} د`;
-  if (d < 86400) return `قبل ${Math.floor(d / 3600)} س`;
+  const L = getLang();
+  if (d < 10) return translate(L, 'الآن');
+  if (d < 60) return translate(L, 'قبل {n} ث', { n: d });
+  if (d < 3600) return translate(L, 'قبل {n} د', { n: Math.floor(d / 60) });
+  if (d < 86400) return translate(L, 'قبل {n} س', { n: Math.floor(d / 3600) });
   return formatDate(t);
 }
 export const pct = (a: number, b: number) => (b <= 0 ? 0 : Math.round((a / b) * 100));
+
+/** School info field in the current language. */
+export function schoolText(school: import('@/types').SchoolInfo, key: Exclude<keyof import('@/types').SchoolInfo, 'en'>, lang: 'ar' | 'en'): string {
+  return (lang === 'en' ? school.en?.[key] : undefined) ?? school[key];
+}

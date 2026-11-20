@@ -7,12 +7,14 @@ import { readingText } from './MapPage';
 import { MiniArea } from '@/components/charts';
 import type { Sensor, SensorKind } from '@/types';
 import { mulberry32 } from '@/lib/random';
+import { useI18n } from '@/i18n';
 
 const KIND_ICON: Record<SensorKind, JSX.Element> = {
   camera: <Camera className="h-4 w-4" />, occupancy: <Users className="h-4 w-4" />, smoke: <Flame className="h-4 w-4" />, heat: <Thermometer className="h-4 w-4" />, door: <DoorOpen className="h-4 w-4" />,
 };
 
 function CameraTile({ s, active, zoneName }: { s: Sensor; active: boolean; zoneName: string }) {
+  const { tr } = useI18n();
   const dots = useMemo(() => {
     const r = mulberry32(s.id.charCodeAt(4) * 31 + s.id.charCodeAt(5));
     return Array.from({ length: 40 }, (_, i) => ({ i, x: 10 + r() * 180, y: 20 + r() * 80, d: 2 + r() * 4, dx: (r() - 0.5) * 60 }));
@@ -23,11 +25,11 @@ function CameraTile({ s, active, zoneName }: { s: Sensor; active: boolean; zoneN
       <div className="relative aspect-video">
         {!s.online ? (
           <div className="absolute inset-0 grid place-items-center text-center text-navy-400">
-            <div><WifiOff className="mx-auto mb-1 h-7 w-7" /><p className="text-xs font-semibold">غير متصل</p><p className="text-[10px]">يلزم تحقق بشري من المنطقة</p></div>
+            <div><WifiOff className="mx-auto mb-1 h-7 w-7" /><p className="text-xs font-semibold">{tr('غير متصل')}</p><p className="text-[10px]">{tr('يلزم تحقق بشري من المنطقة')}</p></div>
           </div>
         ) : !active ? (
           <div className="absolute inset-0 grid place-items-center text-center text-navy-400">
-            <div><VideoOff className="mx-auto mb-1 h-7 w-7" /><p className="text-xs font-semibold">وضع الاستعداد</p><p className="text-[10px]">لا يوجد بث أو عدّ خارج الطوارئ</p></div>
+            <div><VideoOff className="mx-auto mb-1 h-7 w-7" /><p className="text-xs font-semibold">{tr('وضع الاستعداد')}</p><p className="text-[10px]">{tr('لا يوجد بث أو عدّ خارج الطوارئ')}</p></div>
           </div>
         ) : (
           <>
@@ -44,8 +46,8 @@ function CameraTile({ s, active, zoneName }: { s: Sensor; active: boolean; zoneN
               ))}
             </svg>
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-brand/20 to-transparent animate-scan" />
-            <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md bg-danger px-1.5 py-0.5 text-[10px] font-bold text-white"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> رصد مؤقت</span>
-            <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 font-mono text-sm font-bold text-white">{s.reading}</span>
+            <span className="absolute end-2 top-2 inline-flex items-center gap-1 rounded-md bg-danger px-1.5 py-0.5 text-[10px] font-bold text-white"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> {tr('رصد مؤقت')}</span>
+            <span className="absolute bottom-2 start-2 rounded-md bg-black/60 px-2 py-0.5 font-mono text-sm font-bold text-white">{s.reading}</span>
           </>
         )}
       </div>
@@ -58,6 +60,7 @@ function CameraTile({ s, active, zoneName }: { s: Sensor; active: boolean; zoneN
 }
 
 export default function Monitoring() {
+  const { tr, n } = useI18n();
   const sensors = useStore((s) => s.sensors);
   const zones = useStore((s) => s.zones);
   const floors = useStore((s) => s.floors);
@@ -70,7 +73,7 @@ export default function Monitoring() {
   const [floor, setFloor] = useState('all');
   const [q, setQ] = useState('');
 
-  const where = (s: Sensor) => (s.zoneId ? zones.find((z) => z.id === s.zoneId)?.name : aps.find((a) => a.id === s.assemblyPointId)?.name) ?? '—';
+  const where = (s: Sensor) => (s.zoneId ? n(zones.find((z) => z.id === s.zoneId)) : n(aps.find((a) => a.id === s.assemblyPointId))) || '—';
   const floorOf = (s: Sensor) => zones.find((z) => z.id === s.zoneId)?.floorId ?? 'OUT';
   const cams = sensors.filter((s) => s.kind === 'camera');
   const filtered = sensors.filter((s) =>
@@ -82,7 +85,7 @@ export default function Monitoring() {
 
   return (
     <div>
-      <PageHeader title="الرصد الذكي" icon={<Radar className="h-6 w-6" />} subtitle="حالة الكاميرات والحساسات – يعمل العدّ والرصد فقط بعد تفعيل وضع الطوارئ" actions={<DemoBadge>أجهزة افتراضية – لا اتصال بكاميرات حقيقية</DemoBadge>} />
+      <PageHeader title={tr('الرصد الذكي')} icon={<Radar className="h-6 w-6" />} subtitle={tr('حالة الكاميرات والحساسات – يعمل العدّ والرصد فقط بعد تفعيل وضع الطوارئ')} actions={<DemoBadge>{tr('أجهزة افتراضية – لا اتصال بكاميرات حقيقية')}</DemoBadge>} />
 
       <div className={cx('mb-6 overflow-hidden rounded-3xl p-5 sm:p-6', e.active ? 'bg-gradient-to-l from-danger-dark to-danger text-white' : 'bg-white shadow-card ring-1 ring-navy-900/5')}>
         <div className="flex flex-wrap items-center gap-4">
@@ -91,21 +94,21 @@ export default function Monitoring() {
           </span>
           <div className="min-w-0 flex-1">
             <p className={cx('font-display text-xl font-extrabold', !e.active && 'text-navy-900')}>
-              {e.active ? 'وضع الرصد المؤقت مُفعّل' : 'وضع الرصد متوقف'}
+              {e.active ? tr('وضع الرصد المؤقت مُفعّل') : tr('وضع الرصد متوقف')}
             </p>
             <p className={cx('text-sm', e.active ? 'text-white/85' : 'text-navy-500')}>
               {e.active
-                ? 'تجري محاكاة العدّ مجهول الهوية ورصد الحركة لدعم الإخلاء. سيتوقف تلقائيًا عند إنهاء حالة الطوارئ.'
-                : 'لا يتم تشغيل أي رصد مستمر. تبقى الحساسات في وضع الاستعداد حتى تفعيل حالة طوارئ رسمية أو محاكاة.'}
+                ? tr('تجري محاكاة العدّ مجهول الهوية ورصد الحركة لدعم الإخلاء. سيتوقف تلقائيًا عند إنهاء حالة الطوارئ.')
+                : tr('لا يتم تشغيل أي رصد مستمر. تبقى الحساسات في وضع الاستعداد حتى تفعيل حالة طوارئ رسمية أو محاكاة.')}
             </p>
           </div>
         </div>
         <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { i: <EyeOff className="h-4 w-4" />, t: 'بدون تعرّف على الوجوه أو الهوية' },
-            { i: <VideoOff className="h-4 w-4" />, t: 'لا يتم تخزين أو تسجيل أي فيديو' },
-            { i: <Database className="h-4 w-4" />, t: 'تُحفظ الأعداد الإجمالية فقط' },
-            { i: <ShieldCheck className="h-4 w-4" />, t: 'يعمل عند الطوارئ فقط ويتوقف بانتهائها' },
+            { i: <EyeOff className="h-4 w-4" />, t: tr('بدون تعرّف على الوجوه أو الهوية') },
+            { i: <VideoOff className="h-4 w-4" />, t: tr('لا يتم تخزين أو تسجيل أي فيديو') },
+            { i: <Database className="h-4 w-4" />, t: tr('تُحفظ الأعداد الإجمالية فقط') },
+            { i: <ShieldCheck className="h-4 w-4" />, t: tr('يعمل عند الطوارئ فقط ويتوقف بانتهائها') },
           ].map((p) => (
             <div key={p.t} className={cx('flex items-center gap-2 rounded-xl px-3 py-2', e.active ? 'bg-white/10' : 'bg-navy-50 text-navy-700')}>{p.i}{p.t}</div>
           ))}
@@ -113,60 +116,60 @@ export default function Monitoring() {
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5">
-        <StatCard label="إجمالي الأجهزة" value={sensors.length} icon={<Radar className="h-4 w-4" />} />
-        <StatCard label="متصلة" value={sensors.filter((s) => s.online).length} icon={<ShieldCheck className="h-4 w-4" />} tone="safe" />
-        <StatCard label="غير متصلة" value={sensors.filter((s) => !s.online).length} icon={<WifiOff className="h-4 w-4" />} tone="danger" />
-        <StatCard label="بطارية منخفضة" value={sensors.filter((s) => s.battery < 20).length} icon={<BatteryLow className="h-4 w-4" />} tone="warn" />
-        <StatCard label="إنذارات حساسات" value={sensors.filter((s) => s.triggered && s.kind !== 'door').length} icon={<Flame className="h-4 w-4" />} tone="danger" />
+        <StatCard label={tr('إجمالي الأجهزة')} value={sensors.length} icon={<Radar className="h-4 w-4" />} />
+        <StatCard label={tr('متصلة')} value={sensors.filter((s) => s.online).length} icon={<ShieldCheck className="h-4 w-4" />} tone="safe" />
+        <StatCard label={tr('غير متصلة')} value={sensors.filter((s) => !s.online).length} icon={<WifiOff className="h-4 w-4" />} tone="danger" />
+        <StatCard label={tr('بطارية منخفضة')} value={sensors.filter((s) => s.battery < 20).length} icon={<BatteryLow className="h-4 w-4" />} tone="warn" />
+        <StatCard label={tr('إنذارات حساسات')} value={sensors.filter((s) => s.triggered && s.kind !== 'door').length} icon={<Flame className="h-4 w-4" />} tone="danger" />
       </div>
 
-      <Card className="mb-6" title="كاميرات العدّ (عرض تمثيلي)" subtitle="نقاط مجهولة الهوية تمثل الأشخاص المرصودين – ليست صورًا أو بثًا حقيقيًا" action={e.active && e.progress.length > 1 ? <div className="w-40"><MiniArea data={e.progress as unknown as Record<string, number>[]} dataKey="observed" color="#2a78d6" height={36} /></div> : undefined}>
+      <Card className="mb-6" title={tr('كاميرات العدّ (عرض تمثيلي)')} subtitle={tr('نقاط مجهولة الهوية تمثل الأشخاص المرصودين – ليست صورًا أو بثًا حقيقيًا')} action={e.active && e.progress.length > 1 ? <div className="w-40"><MiniArea data={e.progress as unknown as Record<string, number>[]} dataKey="observed" color="#2a78d6" height={36} /></div> : undefined}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
           {cams.map((c) => <CameraTile key={c.id} s={c} active={e.active} zoneName={where(c)} />)}
         </div>
       </Card>
 
-      <Card title={`سجل الحساسات (${filtered.length})`} padded={false}>
+      <Card title={tr('سجل الحساسات ({n})', { n: filtered.length })} padded={false}>
         <div className="grid grid-cols-2 gap-2 border-b border-navy-50 p-3 md:grid-cols-4">
           <div className="relative col-span-2 md:col-span-1">
-            <Search className="pointer-events-none absolute right-2.5 top-2.5 h-4 w-4 text-navy-300" />
-            <input className={cx(inputCls, 'pr-8')} placeholder="بحث بالاسم أو الرمز" value={q} onChange={(e2) => setQ(e2.target.value)} />
+            <Search className="pointer-events-none absolute start-2.5 top-2.5 h-4 w-4 text-navy-300" />
+            <input className={cx(inputCls, 'ps-8')} placeholder={tr('بحث بالاسم أو الرمز')} value={q} onChange={(e2) => setQ(e2.target.value)} />
           </div>
           <select className={inputCls} value={kind} onChange={(e2) => setKind(e2.target.value as SensorKind | 'all')}>
-            <option value="all">كل الأنواع</option>
+            <option value="all">{tr('كل الأنواع')}</option>
             {(Object.keys(SENSOR_LABEL) as SensorKind[]).map((k) => <option key={k} value={k}>{SENSOR_LABEL[k]}</option>)}
           </select>
           <select className={inputCls} value={status} onChange={(e2) => setStatus(e2.target.value as typeof status)}>
-            <option value="all">كل الحالات</option><option value="online">متصل</option><option value="offline">غير متصل</option><option value="triggered">إنذار</option>
+            <option value="all">{tr('كل الحالات')}</option><option value="online">{tr('متصل')}</option><option value="offline">{tr('غير متصل')}</option><option value="triggered">{tr('إنذار')}</option>
           </select>
           <select className={inputCls} value={floor} onChange={(e2) => setFloor(e2.target.value)}>
-            <option value="all">كل المواقع</option>
-            {floors.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-            <option value="OUT">نقاط التجمع</option>
+            <option value="all">{tr('كل المواقع')}</option>
+            {floors.map((f) => <option key={f.id} value={f.id}>{n(f)}</option>)}
+            <option value="OUT">{tr('نقاط التجمع')}</option>
           </select>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead className="bg-navy-50/60 text-xs text-navy-500">
-              <tr><th className="px-4 py-2.5 text-right font-semibold">الجهاز</th><th className="text-right font-semibold">النوع</th><th className="text-right font-semibold">الموقع</th><th className="text-right font-semibold">الاتصال</th><th className="text-right font-semibold">البطارية</th><th className="text-right font-semibold">القراءة</th>{user.role !== 'principal' && <th className="text-right font-semibold">تحكم</th>}</tr>
+              <tr><th className="px-4 py-2.5 text-start font-semibold">{tr('الجهاز')}</th><th className="text-start font-semibold">{tr('النوع')}</th><th className="text-start font-semibold">{tr('الموقع')}</th><th className="text-start font-semibold">{tr('الاتصال')}</th><th className="text-start font-semibold">{tr('البطارية')}</th><th className="text-start font-semibold">{tr('القراءة')}</th>{user.role !== 'principal' && <th className="text-start font-semibold">{tr('تحكم')}</th>}</tr>
             </thead>
             <tbody className="divide-y divide-navy-50">
               {filtered.map((s) => (
                 <tr key={s.id} className={cx(s.triggered && s.kind !== 'door' && 'bg-danger-soft/50')}>
-                  <td className="px-4 py-2.5"><p className="font-semibold text-navy-900">{s.name}</p><p className="text-[11px] text-navy-400">{s.id}</p></td>
+                  <td className="px-4 py-2.5"><p className="font-semibold text-navy-900">{n(s)}</p><p className="text-[11px] text-navy-400">{s.id}</p></td>
                   <td><span className="inline-flex items-center gap-1.5 text-navy-700">{KIND_ICON[s.kind]} {SENSOR_LABEL[s.kind]}</span></td>
                   <td className="text-navy-700">{where(s)}</td>
-                  <td>{s.online ? <Badge className="bg-safe-soft text-safe-dark ring-safe/30">متصل</Badge> : <Badge className="bg-danger-soft text-danger-dark ring-danger/30">غير متصل</Badge>}</td>
+                  <td>{s.online ? <Badge className="bg-safe-soft text-safe-dark ring-safe/30">{tr('متصل')}</Badge> : <Badge className="bg-danger-soft text-danger-dark ring-danger/30">{tr('غير متصل')}</Badge>}</td>
                   <td className={cx('tabular-nums', s.battery < 20 ? 'font-bold text-danger' : 'text-navy-600')}>{s.battery}%</td>
                   <td className="tabular-nums">
-                    {!s.online ? '—' : !e.active ? <span className="text-navy-400">استعداد</span> : (
+                    {!s.online ? '—' : !e.active ? <span className="text-navy-400">{tr('استعداد')}</span> : (
                       <span className={cx('font-semibold', s.triggered && s.kind !== 'door' ? 'text-danger' : 'text-navy-900')}>{readingText(s.kind, s.reading)}{s.triggered && s.kind !== 'door' ? ' ⚠' : ''}</span>
                     )}
                   </td>
                   {user.role !== 'principal' && (
                     <td>
                       <button onClick={() => upsertSensor({ ...s, online: !s.online })} className="rounded-lg px-2 py-1 text-xs font-semibold text-brand hover:bg-navy-50">
-                        {s.online ? 'تعطيل' : 'تفعيل'}
+                        {s.online ? tr('تعطيل') : tr('تفعيل')}
                       </button>
                     </td>
                   )}

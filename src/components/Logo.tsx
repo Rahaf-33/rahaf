@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { cx } from './ui';
+import { useI18n } from '@/i18n';
 
 export function LogoMark({ className }: { className?: string }) {
   const gid = `lg-${useId().replace(/:/g, '')}`;
@@ -21,17 +22,18 @@ export function LogoMark({ className }: { className?: string }) {
 }
 
 export function Logo({ dark = false, compact = false, className }: { dark?: boolean; compact?: boolean; className?: string }) {
+  const { tr, isEn } = useI18n();
   return (
     <div className={cx('flex items-center gap-2.5', className)}>
       <LogoMark className="h-10 w-10 shrink-0 drop-shadow" />
       {!compact && (
         <div className="leading-tight">
-          <div className={cx('flex items-baseline gap-1.5 font-display', dark ? 'text-white' : 'text-navy-900')}>
-            <span className="text-lg font-black tracking-[0.18em]" dir="ltr">ISTIBAQ</span>
-            <span className={cx('text-sm font-light', dark ? 'text-navy-300' : 'text-navy-300')}>|</span>
-            <span className="text-lg font-extrabold">استباق</span>
+          <div className={cx('flex items-baseline gap-1.5 font-display', dark ? 'text-white' : 'text-navy-900')} dir="ltr">
+            <span className="text-lg font-black tracking-[0.18em]">ISTIBAQ</span>
+            <span className="text-sm font-light text-navy-300">|</span>
+            <span className="text-lg font-extrabold">{isEn ? 'Istibaq' : 'استباق'}</span>
           </div>
-          <p className={cx('text-[10px] font-medium', dark ? 'text-navy-300' : 'text-navy-500')}>منصة الاستجابة المدرسية للطوارئ</p>
+          <p className={cx('text-[10px] font-medium', dark ? 'text-navy-300' : 'text-navy-500')}>{tr('منصة الاستجابة المدرسية للطوارئ')}</p>
         </div>
       )}
     </div>
@@ -39,3 +41,7 @@ export function Logo({ dark = false, compact = false, className }: { dark?: bool
 }
 
 export const SLOGAN = 'نرصد الخطر، ننظم الاستجابة، ونطمئن على الجميع.';
+export function useSlogan() {
+  const { tr } = useI18n();
+  return tr(SLOGAN);
+}

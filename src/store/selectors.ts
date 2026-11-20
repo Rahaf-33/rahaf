@@ -1,3 +1,4 @@
+import { localized } from '@/lib/labels';
 import type { ClassRoom, Student } from '@/types';
 
 export type ClassStatus = 'normal' | 'pending' | 'in_progress' | 'complete' | 'help';
@@ -67,9 +68,9 @@ export function totals(stats: ClassStats[]) {
   );
 }
 
-export const CLASS_STATUS_LABEL: Record<ClassStatus, string> = {
+export const CLASS_STATUS_LABEL: Record<ClassStatus, string> = localized({
   normal: 'وضع طبيعي', pending: 'بانتظار الحصر', in_progress: 'جارٍ الحصر', complete: 'مكتمل', help: 'يحتاج متابعة',
-};
+});
 export const CLASS_STATUS_STYLE: Record<ClassStatus, string> = {
   normal: 'bg-navy-50 text-navy-700 ring-navy-200',
   pending: 'bg-warn-soft text-warn-dark ring-warn/30',

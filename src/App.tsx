@@ -1,6 +1,7 @@
 import { HashRouter, MemoryRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useStore } from '@/store/useStore';
+import { useDocumentLang } from '@/i18n';
 import { Layout } from '@/components/Layout';
 import { canAccess, homeFor } from '@/lib/nav';
 import Login from '@/pages/Login';
@@ -28,6 +29,7 @@ const Router = import.meta.env.VITE_HOSTED === '1' ? MemoryRouter : HashRouter;
 
 export default function App() {
   const user = useStore((s) => s.user);
+  useDocumentLang();
   return (
     <Router>
       <Routes>

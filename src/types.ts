@@ -1,3 +1,6 @@
+import type { Text } from '@/i18n/core';
+export type { Text } from '@/i18n/core';
+
 export type Role = 'principal' | 'teacher' | 'safety' | 'admin';
 
 export type EmergencyType = 'fire' | 'external_threat' | 'evacuation' | 'medical';
@@ -13,12 +16,14 @@ export type ZoneStatus = 'normal' | 'evacuating' | 'cleared' | 'needs_check' | '
 export interface Floor {
   id: string;
   name: string;
+  nameEn?: string;
   level: number;
 }
 
 export interface Zone {
   id: string;
   name: string;
+  nameEn?: string;
   floorId: string;
   kind: ZoneKind;
   /** svg rect inside a 1000x520 floor viewBox */
@@ -33,6 +38,7 @@ export interface Zone {
 export interface Exit {
   id: string;
   name: string;
+  nameEn?: string;
   floorId: string;
   x: number;
   y: number;
@@ -43,7 +49,9 @@ export interface Exit {
 export interface AssemblyPoint {
   id: string;
   name: string;
+  nameEn?: string;
   description: string;
+  descriptionEn?: string;
 }
 
 export interface ClassRoom {
@@ -59,7 +67,9 @@ export interface ClassRoom {
 export interface Teacher {
   id: string;
   name: string;
+  nameEn?: string;
   subject: string;
+  subjectEn?: string;
   classId: string;
   phone: string;
 }
@@ -67,19 +77,22 @@ export interface Teacher {
 export interface Student {
   id: string;
   name: string;
+  nameEn?: string;
   classId: string;
   attendance: Attendance;
   safety: SafetyStatus;
-  note?: string;
+  note?: Text;
   confirmedAt?: number;
-  confirmedBy?: string;
+  confirmedBy?: Text;
   medicalNote?: string;
+  medicalNoteEn?: string;
 }
 
 export type SensorKind = 'camera' | 'smoke' | 'heat' | 'occupancy' | 'door';
 export interface Sensor {
   id: string;
   name: string;
+  nameEn?: string;
   kind: SensorKind;
   zoneId?: string;
   assemblyPointId?: string;
@@ -95,7 +108,9 @@ export interface SafetyProcedure {
   type: EmergencyType;
   title: string;
   steps: string[];
-  roles: { role: Role; action: string }[];
+  roles: { role: Role; action: string; actionEn?: string }[];
+  titleEn?: string;
+  stepsEn?: string[];
   /** reference to the approving entity – placeholder until the school replaces it with the official document */
   source: string;
   version: string;
@@ -107,24 +122,24 @@ export interface AIAnalysis {
   severity: Severity;
   scores: Record<EmergencyType, number>;
   matched: { term: string; type: EmergencyType | 'severity'; weight: number }[];
-  location?: string;
+  location?: Text;
   procedureId: string;
-  reasoning: string[];
+  reasoning: Text[];
   requiresHumanReview: boolean;
 }
 
 export interface Alert {
   id: string;
-  title: string;
-  text: string;
+  title: Text;
+  text: Text;
   source: 'demo' | 'manual';
-  sourceLabel: string;
+  sourceLabel: Text;
   type: EmergencyType;
   severity: Severity;
   receivedAt: number;
   status: 'new' | 'acknowledged' | 'activated' | 'dismissed' | 'closed';
   analysis: AIAnalysis;
-  location?: string;
+  location?: Text;
 }
 
 export type LogCategory = 'alert' | 'emergency' | 'sensor' | 'teacher' | 'zone' | 'case' | 'system' | 'notification' | 'manual';
@@ -133,15 +148,15 @@ export interface LogEntry {
   at: number;
   category: LogCategory;
   level: 'info' | 'success' | 'warning' | 'critical';
-  actor: string;
-  message: string;
+  actor: Text;
+  message: Text;
 }
 
 export interface Notification {
   id: string;
   at: number;
-  title: string;
-  body: string;
+  title: Text;
+  body: Text;
   audience: Role[];
   level: 'info' | 'success' | 'warning' | 'critical';
   read: boolean;
@@ -154,8 +169,8 @@ export type HelpType = 'first_aid' | 'evacuation_assist' | 'missing_student' | '
 export interface Case {
   id: string;
   createdAt: number;
-  title: string;
-  description: string;
+  title: Text;
+  description: Text;
   classId?: string;
   zoneId?: string;
   studentId?: string;
@@ -163,7 +178,7 @@ export interface Case {
   priority: 'p1' | 'p2' | 'p3';
   status: 'open' | 'in_progress' | 'resolved';
   assignee?: string;
-  source: string;
+  source: Text;
   resolvedAt?: number;
 }
 
@@ -195,7 +210,7 @@ export interface EmergencyRecord {
   id: string;
   type: EmergencyType;
   severity: Severity;
-  title: string;
+  title: Text;
   startedAt: number;
   endedAt: number;
   simulation: boolean;
@@ -212,6 +227,7 @@ export interface EmergencyRecord {
 }
 
 export interface SchoolInfo {
+  en?: Partial<Omit<SchoolInfo, 'en'>>;
   name: string;
   district: string;
   principal: string;
@@ -224,7 +240,9 @@ export interface SchoolInfo {
 export interface User {
   id: string;
   name: string;
+  nameEn?: string;
   role: Role;
   title: string;
+  titleEn?: string;
   teacherId?: string;
 }
