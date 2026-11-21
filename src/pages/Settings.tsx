@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, Save, Plus, Pencil, Trash2, RotateCcw, Lock, School, Layers, Users, GraduationCap, Radar, DoorOpen, BookCheck, Server, Search } from 'lucide-react';
+import { UsersTab } from './settings/UsersTab';
+import { KeyRound, Settings as SettingsIcon, Save, Plus, Pencil, Trash2, RotateCcw, Lock, School, Layers, Users, GraduationCap, Radar, DoorOpen, BookCheck, Server, Search } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Badge, Button, Card, cx, Field, inputCls, Modal, PageHeader, Tabs, DemoBadge } from '@/components/ui';
 import { ATTENDANCE_LABEL, SENSOR_LABEL, TYPE_LABEL } from '@/lib/labels';
@@ -7,12 +8,13 @@ import type { Attendance, ClassRoom, Exit, SafetyProcedure, Sensor, SensorKind, 
 import { uid } from '@/lib/random';
 import { useI18n } from '@/i18n';
 
-type Tab = 'school' | 'floors' | 'classes' | 'teachers' | 'students' | 'sensors' | 'exits' | 'procedures' | 'system';
+type Tab = 'school' | 'floors' | 'classes' | 'teachers' | 'students' | 'sensors' | 'exits' | 'procedures' | 'users' | 'system';
 
 export default function Settings() {
   const { tr } = useI18n();
   const [tab, setTab] = useState<Tab>('school');
   const active = useStore((s) => s.emergency.active);
+  const isAdmin = useStore((s) => s.user?.role === 'admin');
   return (
     <div>
       <PageHeader title={tr('الإعدادات')} icon={<SettingsIcon className="h-6 w-6" />} subtitle={tr('بيانات المدرسة والطوابق والفصول والمعلمات والطالبات والحساسات ومخارج الطوارئ')} actions={<DemoBadge>{tr('التغييرات محفوظة محليًا في المتصفح')}</DemoBadge>} />
@@ -26,6 +28,7 @@ export default function Settings() {
         { value: 'sensors', label: <TabL i={<Radar className="h-4 w-4" />} t={tr('الحساسات')} /> },
         { value: 'exits', label: <TabL i={<DoorOpen className="h-4 w-4" />} t={tr('المخارج')} /> },
         { value: 'procedures', label: <TabL i={<BookCheck className="h-4 w-4" />} t={tr('الإجراءات المعتمدة')} /> },
+        ...(isAdmin ? [{ value: 'users' as Tab, label: <TabL i={<KeyRound className="h-4 w-4" />} t={tr('المستخدمون')} /> }] : []),
         { value: 'system', label: <TabL i={<Server className="h-4 w-4" />} t={tr('النظام')} /> },
       ]} />
       <fieldset disabled={active} className={cx(active && 'pointer-events-none opacity-60')}>
@@ -37,6 +40,7 @@ export default function Settings() {
         {tab === 'sensors' && <SensorsTab />}
         {tab === 'exits' && <ExitsTab />}
         {tab === 'procedures' && <ProceduresTab />}
+        {tab === 'users' && isAdmin && <UsersTab />}
         {tab === 'system' && <SystemTab />}
       </fieldset>
     </div>

@@ -1,5 +1,5 @@
 import type {
-  AssemblyPoint, ClassRoom, Exit, Floor, SafetyProcedure, SchoolInfo, Sensor, Student, Teacher, User, Zone,
+  AssemblyPoint, ClassRoom, Exit, Floor, SafetyProcedure, SchoolInfo, Sensor, Student, Teacher, Zone,
 } from '@/types';
 import { mulberry32 } from '@/lib/random';
 
@@ -365,12 +365,6 @@ export const PROCEDURES: SafetyProcedure[] = [
   },
 ];
 
-export const DEMO_USERS: User[] = [
-  { id: 'U-P', name: SCHOOL.principal, nameEn: SCHOOL.en!.principal, role: 'principal', title: 'قائدة المدرسة', titleEn: 'School Principal' },
-  { id: 'U-T', name: 'أ. وعد محمد', nameEn: 'Ms. Waad Mohammed', role: 'teacher', title: 'معلمة – رائدة فصل 2/3', titleEn: 'Teacher – Homeroom 2/3', teacherId: 'T7' },
-  { id: 'U-S', name: SCHOOL.safetyOfficer, nameEn: SCHOOL.en!.safetyOfficer, role: 'safety', title: 'مسؤولة الأمن والسلامة', titleEn: 'Safety & Security Officer' },
-  { id: 'U-A', name: 'م. دانة الحربي', nameEn: 'Eng. Dana Al-Harbi', role: 'admin', title: 'مديرة النظام', titleEn: 'System Administrator' },
-];
 
 export interface DemoAlert { label: string; labelEn: string; text: string; textEn: string; source: string; sourceEn: string }
 export const DEMO_ALERT_TEXTS: DemoAlert[] = [

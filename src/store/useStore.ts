@@ -12,6 +12,13 @@ import { bi, both, N, textOf, type Lang, type Text } from '@/i18n/core';
 import { mulberry32, uid } from '@/lib/random';
 import { classStats, totals } from './selectors';
 import { buildDemoHistory } from '@/data/history';
+import { INITIAL_ACCOUNTS } from '@/data/accounts';
+import { hashPassword, randomSalt, safeEqual, LOCK_MS, MAX_ATTEMPTS, SESSION_MS } from '@/lib/auth';
+import type { Account } from '@/types';
+
+export type SignInResult = { ok: true } | { ok: false; error: 'invalid' | 'locked' | 'crypto'; lockUntil?: number };
+export type AccountInput = Omit<Account, 'salt' | 'hash' | 'createdAt' | 'lastLoginAt'>;
+const toUser = (a: Account): User => ({ id: a.id, name: a.name, nameEn: a.nameEn, role: a.role, title: a.title, titleEn: a.titleEn, teacherId: a.teacherId });
 
 export interface Toast { id: string; title: Text; body?: Text; level: 'info' | 'success' | 'warning' | 'critical' }
 
@@ -53,8 +60,17 @@ interface AppState {
   toasts: Toast[];
   showAlertModal: string | null;
 
-  login: (u: User) => void;
-  logout: () => void;
+  accounts: Account[];
+  sessionStartedAt: number | null;
+  failedLogins: Record<string, { count: number; lockUntil?: number }>;
+  signIn: (username: string, password: string) => Promise<SignInResult>;
+  logout: (reason?: 'expired') => void;
+  checkSession: () => void;
+  changePassword: (current: string, next: string) => Promise<'wrong-current' | 'crypto' | null>;
+  saveAccount: (input: AccountInput, password?: string) => Promise<void>;
+  resetAccountPassword: (id: string, password: string) => Promise<void>;
+  setAccountActive: (id: string, active: boolean) => void;
+  removeAccount: (id: string) => void;
   now: () => number;
   log: (e: Omit<LogEntry, 'id' | 'at'>) => void;
   notify: (n: Omit<Notification, 'id' | 'at' | 'read'>, toast?: boolean) => void;
@@ -133,14 +149,92 @@ export const useStore = create<AppState>()(
       showAlertModal: null,
 
       /* ---------------- basics ---------------- */
-      login: (u) => {
-        set({ user: u });
-        get().log({ category: 'system', level: 'info', actor: N(u), message: bi(`تسجيل دخول بصفة ${u.title}`, `Signed in as ${u.titleEn ?? u.title}`) });
+      accounts: INITIAL_ACCOUNTS,
+      sessionStartedAt: null,
+      failedLogins: {},
+      signIn: async (usernameRaw, password) => {
+        const username = usernameRaw.trim().toLowerCase();
+        const st = get();
+        const f = st.failedLogins[username];
+        if (f?.lockUntil && f.lockUntil > Date.now()) return { ok: false, error: 'locked', lockUntil: f.lockUntil };
+        const acc = st.accounts.find((a) => a.username.toLowerCase() === username);
+        let hash: string;
+        try {
+          // hash even for unknown users so the response time does not reveal which usernames exist
+          hash = await hashPassword(password, acc?.salt ?? 'no-such-user-salt');
+        } catch {
+          return { ok: false, error: 'crypto' };
+        }
+        if (!acc || !acc.active || !safeEqual(hash, acc.hash)) {
+          const count = (f?.count ?? 0) + 1;
+          const lockUntil = count >= MAX_ATTEMPTS ? Date.now() + LOCK_MS : undefined;
+          set((s) => ({ failedLogins: { ...s.failedLogins, [username]: { count: lockUntil ? 0 : count, lockUntil } } }));
+          get().log({ category: 'system', level: 'warning', actor: 'النظام', message: bi(`محاولة دخول فاشلة لاسم المستخدم "${username}"${lockUntil ? ' – تم إيقاف المحاولات مؤقتًا لمدة دقيقة' : ''}`, `Failed sign-in attempt for username "${username}"${lockUntil ? ' – attempts paused for one minute' : ''}`) });
+          return lockUntil ? { ok: false, error: 'locked', lockUntil } : { ok: false, error: 'invalid' };
+        }
+        const now = Date.now();
+        set((s) => ({
+          user: toUser(acc),
+          sessionStartedAt: now,
+          failedLogins: Object.fromEntries(Object.entries(s.failedLogins).filter(([k]) => k !== username)),
+          accounts: s.accounts.map((a) => (a.id === acc.id ? { ...a, lastLoginAt: now } : a)),
+        }));
+        get().log({ category: 'system', level: 'info', actor: N(acc), message: bi(`تسجيل دخول بصفة ${acc.title}`, `Signed in as ${acc.titleEn ?? acc.title}`) });
+        return { ok: true };
       },
-      logout: () => {
+      logout: (reason) => {
         const u = get().user;
-        if (u) get().log({ category: 'system', level: 'info', actor: N(u), message: 'تسجيل خروج' });
-        set({ user: null });
+        if (u) get().log({ category: 'system', level: 'info', actor: N(u), message: reason === 'expired' ? bi('انتهت الجلسة وتم تسجيل الخروج تلقائيًا', 'Session expired and signed out automatically') : 'تسجيل خروج' });
+        set({ user: null, sessionStartedAt: null, toasts: [], showAlertModal: null });
+      },
+      checkSession: () => {
+        const st = get();
+        if (!st.user) return;
+        const acc = st.accounts.find((a) => a.id === st.user!.id);
+        if (!acc || !acc.active || !st.sessionStartedAt || Date.now() - st.sessionStartedAt > SESSION_MS) get().logout('expired');
+      },
+      changePassword: async (current, next) => {
+        const st = get();
+        const acc = st.accounts.find((a) => a.id === st.user?.id);
+        if (!acc) return 'wrong-current';
+        try {
+          const h = await hashPassword(current, acc.salt);
+          if (!safeEqual(h, acc.hash)) return 'wrong-current';
+          const salt = randomSalt();
+          const hash = await hashPassword(next, salt);
+          set((s) => ({ accounts: s.accounts.map((a) => (a.id === acc.id ? { ...a, salt, hash, mustChangePassword: false } : a)) }));
+        } catch {
+          return 'crypto';
+        }
+        get().log({ category: 'system', level: 'success', actor: N(acc), message: bi('تم تغيير كلمة المرور', 'Password changed') });
+        return null;
+      },
+      saveAccount: async (input, password) => {
+        const exists = get().accounts.find((a) => a.id === input.id);
+        let salt = exists?.salt ?? '';
+        let hash = exists?.hash ?? '';
+        if (password) { salt = randomSalt(); hash = await hashPassword(password, salt); }
+        const acc: Account = { ...exists, ...input, username: input.username.trim().toLowerCase(), salt, hash, mustChangePassword: password ? true : exists?.mustChangePassword, createdAt: exists?.createdAt ?? Date.now() };
+        set((s) => ({ accounts: exists ? s.accounts.map((a) => (a.id === acc.id ? acc : a)) : [...s.accounts, acc] }));
+        if (get().user?.id === acc.id) set({ user: toUser(acc) });
+        settingsLog(get, bi(`${exists ? 'تعديل' : 'إنشاء'} حساب المستخدم ${acc.username}`, `user account ${acc.username} ${exists ? 'edited' : 'created'}`));
+      },
+      resetAccountPassword: async (id, password) => {
+        const salt = randomSalt();
+        const hash = await hashPassword(password, salt);
+        const acc = get().accounts.find((a) => a.id === id);
+        set((s) => ({ accounts: s.accounts.map((a) => (a.id === id ? { ...a, salt, hash, mustChangePassword: true } : a)) }));
+        settingsLog(get, bi(`إعادة تعيين كلمة مرور ${acc?.username}`, `password reset for ${acc?.username}`));
+      },
+      setAccountActive: (id, active) => {
+        const acc = get().accounts.find((a) => a.id === id);
+        set((s) => ({ accounts: s.accounts.map((a) => (a.id === id ? { ...a, active } : a)) }));
+        settingsLog(get, bi(`${active ? 'تفعيل' : 'إيقاف'} حساب ${acc?.username}`, `account ${acc?.username} ${active ? 'enabled' : 'disabled'}`));
+      },
+      removeAccount: (id) => {
+        const acc = get().accounts.find((a) => a.id === id);
+        set((s) => ({ accounts: s.accounts.filter((a) => a.id !== id) }));
+        settingsLog(get, bi(`حذف حساب ${acc?.username}`, `account ${acc?.username} deleted`));
       },
       now: () => {
         const e = get().emergency;
@@ -591,11 +685,11 @@ export const useStore = create<AppState>()(
       },
     }),
     {
-      name: 'istibaq-demo-v4',
+      name: 'istibaq-v5',
       version: 1,
       partialize: (s) => ({
         lang: s.lang,
-        user: s.user, school: s.school, floors: s.floors, classes: s.classes, teachers: s.teachers,
+        user: s.user, sessionStartedAt: s.sessionStartedAt, accounts: s.accounts, failedLogins: s.failedLogins, school: s.school, floors: s.floors, classes: s.classes, teachers: s.teachers,
         students: s.students.map((x) => ({ ...x, safety: 'unverified' as const, note: undefined, confirmedAt: undefined, confirmedBy: undefined })),
         sensors: s.sensors.map((x) => ({ ...x, reading: 0, triggered: false })), exits: s.exits, procedures: s.procedures, history: s.history,
         zones: s.zones,

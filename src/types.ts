@@ -246,3 +246,13 @@ export interface User {
   titleEn?: string;
   teacherId?: string;
 }
+
+export interface Account extends User {
+  username: string;
+  salt: string;
+  hash: string;
+  active: boolean;
+  mustChangePassword?: boolean;
+  lastLoginAt?: number;
+  createdAt?: number;
+}

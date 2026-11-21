@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, LogOut, Menu, PlayCircle, Square, X, Pause, Play, ShieldCheck, Gauge, Siren } from 'lucide-react';
+import { Bell, KeyRound, LogOut, Menu, PlayCircle, Square, X, Pause, Play, ShieldCheck, Gauge, Siren } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { NAV } from '@/lib/nav';
 import { Logo, useSlogan } from './Logo';
 import { LangToggle } from './LangToggle';
+import { ChangePasswordModal } from './ChangePasswordModal';
 import { schoolText } from '@/lib/labels';
 import { Button, cx, DemoBadge } from './ui';
 import { ROLE_LABEL, TYPE_LABEL, formatDuration, timeAgo } from '@/lib/labels';
@@ -160,6 +161,8 @@ export function Layout() {
   const openCases = useStore((s) => s.cases.filter((c) => c.status !== 'resolved').length);
   const newAlerts = useStore((s) => s.alerts.filter((a) => a.status === 'new').length);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
+  const mustChange = useStore((s) => !!s.accounts.find((a) => a.id === s.user?.id)?.mustChangePassword);
   const loc = useLocation();
   useEffect(() => setMobileOpen(false), [loc.pathname]);
   const items = NAV.filter((it) => it.roles.includes(user.role));
@@ -231,7 +234,8 @@ export function Layout() {
                 <p className="text-[10px] text-navy-500">{ROLE_LABEL[user.role]}</p>
               </div>
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-navy-800 text-sm font-bold text-white">{n(user).replace(/^(أ\.|م\.|Ms\.|Eng\.)\s*/, '').charAt(0)}</span>
-              <button onClick={logout} className="rounded-lg p-1.5 text-navy-500 hover:bg-white hover:text-danger" aria-label={tr('تسجيل الخروج')} title={tr('تسجيل الخروج')}><LogOut className="h-4 w-4" /></button>
+              <button onClick={() => setPwOpen(true)} className="rounded-lg p-1.5 text-navy-500 hover:bg-white hover:text-navy-900" aria-label={tr('تغيير كلمة المرور')} title={tr('تغيير كلمة المرور')}><KeyRound className="h-4 w-4" /></button>
+              <button onClick={() => logout()} className="rounded-lg p-1.5 text-navy-500 hover:bg-white hover:text-danger" aria-label={tr('تسجيل الخروج')} title={tr('تسجيل الخروج')}><LogOut className="h-4 w-4" /></button>
             </div>
           </div>
           {!e.active && user.role !== 'teacher' && (
@@ -245,6 +249,7 @@ export function Layout() {
       </div>
       <Toaster />
       <AlertModal />
+      <ChangePasswordModal open={pwOpen || mustChange} forced={mustChange} onClose={() => setPwOpen(false)} />
     </div>
   );
 }

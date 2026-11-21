@@ -1,5 +1,5 @@
 import { HashRouter, MemoryRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useStore } from '@/store/useStore';
 import { useDocumentLang } from '@/i18n';
 import { Layout } from '@/components/Layout';
@@ -30,6 +30,13 @@ const Router = import.meta.env.VITE_HOSTED === '1' ? MemoryRouter : HashRouter;
 export default function App() {
   const user = useStore((s) => s.user);
   useDocumentLang();
+  const checkSession = useStore((s) => s.checkSession);
+  useEffect(() => {
+    checkSession();
+    const id = window.setInterval(checkSession, 60_000);
+    window.addEventListener('focus', checkSession);
+    return () => { window.clearInterval(id); window.removeEventListener('focus', checkSession); };
+  }, [checkSession]);
   return (
     <Router>
       <Routes>
